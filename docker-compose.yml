@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: vehicle_rental_system
+      POSTGRES_PASSWORD: vehicle_rental_system
+      POSTGRES_DB: vehicle_rental_system
+    ports: [ "5432:5432" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U vehicle_rental_system" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports: [ "5672:5672", "15672:15672" ]
+  discovery-server:
+    build: ./discovery-server
+    ports: [ "8761:8761" ]
+  api-gateway:
+    build: ./api-gateway
+    ports: [ "8080:8080" ]
+    environment:
+      EUREKA_URL: http://discovery-server:8761/eureka
+    depends_on: [ discovery-server ]
+  customer-service:
+    build: ./customer-service
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/vehicle_rental_system
+      DB_USERNAME: vehicle_rental_system
+      DB_PASSWORD: vehicle_rental_system
+      EUREKA_URL: http://discovery-server:8761/eureka
+    depends_on: [ postgres, discovery-server ]
+  vehicle-service:
+    build: ./vehicle-service
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/vehicle_rental_system
+      DB_USERNAME: vehicle_rental_system
+      DB_PASSWORD: vehicle_rental_system
+      RABBITMQ_HOST: rabbitmq
+      EUREKA_URL: http://discovery-server:8761/eureka
+    depends_on: [ postgres, discovery-server, rabbitmq ]
+  pricing-service:
+    build: ./pricing-service
+    environment:
+      EUREKA_URL: http://discovery-server:8761/eureka
+    depends_on: [ discovery-server ]
+  rental-service:
+    build: ./rental-service
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/vehicle_rental_system
+      DB_USERNAME: vehicle_rental_system
+      DB_PASSWORD: vehicle_rental_system
+      RABBITMQ_HOST: rabbitmq
+      EUREKA_URL: http://discovery-server:8761/eureka
+    depends_on: [ postgres, discovery-server, rabbitmq, customer-service, vehicle-service, pricing-service ]
+  notification-service:
+    build: ./notification-service
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      EUREKA_URL: http://discovery-server:8761/eureka
+    depends_on: [ postgres, discovery-server, rabbitmq ]
