@@ -1,69 +1,138 @@
-# vehicle-rental-system - Distributed Vehicle Rental Platform
+# Vehicle Rental System
 
 ![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F?logo=springboot&logoColor=white)
 ![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-Eureka%20%7C%20Gateway-6DB33F?logo=spring&logoColor=white)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-events-FF6600?logo=rabbitmq&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-persistence-4169E1?logo=postgresql&logoColor=white)
-![Gradle](https://img.shields.io/badge/Gradle-Groovy%20DSL-02303A?logo=gradle&logoColor=white)
+![Gradle](https://img.shields.io/badge/Gradle-Kotlin%20DSL-02303A?logo=gradle&logoColor=white)
 
-A compact microservices platform for browsing vehicles, creating rentals, calculating prices, and processing
-notifications asynchronously. The project intentionally focuses on a coherent architecture instead of adding
-infrastructure for its own sake.
+A compact Spring Cloud microservices platform for managing vehicles, customers, rentals,
+pricing, and asynchronous notifications.
+
+The project is intentionally implemented as independently deployable services, with
+Eureka for service discovery, Spring Cloud Gateway as the public entry point, and
+RabbitMQ for asynchronous communication between services.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     Client[REST client] --> Gateway[API Gateway :8080]
-    Gateway -. service discovery .-> Eureka[Eureka :8761]
+
+    Gateway -. discover services .-> Eureka[Eureka :8761]
+
     Gateway --> Customer[Customer Service]
     Gateway --> Vehicle[Vehicle Service]
     Gateway --> Rental[Rental Service]
     Gateway --> Pricing[Pricing Service]
+
     Rental --> Pricing
-    Rental --> Rabbit[RabbitMQ]
+    Rental -->|RentalCreated| Rabbit[(RabbitMQ)]
+
     Rabbit --> Vehicle
     Rabbit --> Notify[Notification Service]
-    Customer --> DB[(PostgreSQL)]
-    Vehicle --> DB
-    Rental --> DB
-    Notify --> DB
-```
 
-REST is used for request/response operations and pricing. Eureka provides discovery, the Gateway is the public entry
-point, and RabbitMQ carries `RentalCreated`-style events to independent consumers. Each data-owning service owns its
-persistence model; no service queries another service's tables.
+    Customer --> CustomerDB[(PostgreSQL)]
+    Vehicle --> VehicleDB[(PostgreSQL)]
+    Rental --> RentalDB[(PostgreSQL)]
+    Notify --> NotificationDB[(PostgreSQL)]
+````
+
+The API Gateway is the single public entry point. Eureka maintains the service registry
+and allows services to be discovered without hardcoded host addresses.
+
+REST is used for synchronous request/response operations, while RabbitMQ handles
+asynchronous rental events. Each data-owning service manages its own persistence model
+and does not access another service's database directly.
 
 ## Services
 
-| Service                | Responsibility                           | Main dependencies                |
-|------------------------|------------------------------------------|----------------------------------|
-| `api-gateway`          | Public routing through discovery         | Spring Cloud Gateway, Eureka     |
-| `discovery-server`     | Service registry                         | Eureka Server                    |
-| `customer-service`     | Customer CRUD                            | Web, JPA, PostgreSQL, Validation |
-| `vehicle-service`      | Vehicles and availability                | Web, JPA, PostgreSQL, AMQP       |
-| `rental-service`       | Rental lifecycle and event publishing    | Web, JPA, PostgreSQL, AMQP       |
-| `pricing-service`      | Category rates and duration discounts    | Web, Eureka                      |
-| `notification-service` | Asynchronous notification log/simulation | Web, AMQP                        |
+| Service                | Responsibility                             |
+| ---------------------- | ------------------------------------------ |
+| `api-gateway`          | Public API entry point and request routing |
+| `discovery-server`     | Eureka service registry                    |
+| `customer-service`     | Customer management                        |
+| `vehicle-service`      | Vehicle management and availability        |
+| `rental-service`       | Rental lifecycle and event publishing      |
+| `pricing-service`      | Rental price calculation                   |
+| `notification-service` | Asynchronous notification processing       |
+
+## Rental flow
+
+1. A client sends a rental request through the API Gateway.
+2. Rental Service validates the customer and vehicle and requests the rental price.
+3. The rental is persisted with a `PENDING` status.
+4. Rental Service publishes a `RentalCreated` event to RabbitMQ.
+5. Vehicle Service consumes the event and reserves the vehicle.
+6. Notification Service independently consumes the event and records a notification.
+7. The vehicle becomes available again when the rental is completed.
+
+The services remain independently deployable and communicate through REST or RabbitMQ
+rather than sharing application code or database tables.
+
+## Design decisions
+
+### Spring Cloud Gateway
+
+The Gateway provides a single entry point for external clients and routes requests
+to services discovered through Eureka.
+
+### Eureka
+
+Eureka acts as the service registry. Services register themselves on startup and
+the Gateway uses service discovery instead of hardcoded service addresses.
+
+### RabbitMQ
+
+RabbitMQ is used for events where the producer should not need to wait for downstream
+consumers. `RentalCreated` is consumed independently by Vehicle and Notification
+services.
+
+### Service-owned persistence
+
+Each service owns its persistence model. Services never query another service's
+tables directly.
+
+### Independent Gradle builds
+
+Every deployable service is a standalone Gradle project with its own
+`build.gradle.kts` and `settings.gradle.kts`.
 
 ## Features
 
-- Customer and vehicle management APIs
-- Vehicle filtering by category and availability status
-- Rental creation with `PENDING` lifecycle state
-- Pricing by vehicle category with weekly and monthly discounts
-- RabbitMQ events consumed by Vehicle and Notification services
-- Eureka service discovery and Gateway entry point
-- Docker Compose environment with PostgreSQL and RabbitMQ Management UI
-- Independent Gradle build for every deployable service
-- Testcontainers integration tests for every microservice
+* Customer management API
+* Vehicle management and availability filtering
+* Rental lifecycle management
+* Category-based rental pricing
+* Weekly and monthly rental discounts
+* RabbitMQ event publishing and consumption
+* Eureka service discovery
+* Spring Cloud API Gateway
+* PostgreSQL persistence
+* Docker Compose local environment
+* Testcontainers integration tests
+
+## Technology stack
+
+| Area           | Technology                              |
+| -------------- | --------------------------------------- |
+| Language       | Java 21                                 |
+| Framework      | Spring Boot 3.5                         |
+| Cloud          | Spring Cloud Gateway, Netflix Eureka    |
+| HTTP           | Spring Web                              |
+| Persistence    | Spring Data JPA, Hibernate              |
+| Database       | PostgreSQL                              |
+| Messaging      | RabbitMQ, Spring AMQP                   |
+| Testing        | JUnit, Spring Boot Test, Testcontainers |
+| Build          | Gradle Kotlin DSL                       |
+| Infrastructure | Docker Compose                          |
 
 ## Prerequisites
 
-- JDK 21
-- Docker Engine with Docker Compose
-- Gradle 8.14+ (or the included root wrapper)
+* JDK 21
+* Docker Engine with Docker Compose
+* Gradle 8.14+ or the included Gradle wrapper
 
 ## Quick start
 
@@ -73,29 +142,38 @@ Start the complete environment:
 docker compose up --build
 ```
 
-The Gateway is available at `http://localhost:8080`, Eureka at `http://localhost:8761`, and RabbitMQ Management at
-`http://localhost:15672` (`guest` / `guest`).
+The main endpoints are:
 
-On Windows PowerShell, build an individual service with the shared wrapper:
+| Service             | URL                      |
+| ------------------- | ------------------------ |
+| API Gateway         | `http://localhost:8080`  |
+| Eureka              | `http://localhost:8761`  |
+| RabbitMQ Management | `http://localhost:15672` |
+
+RabbitMQ Management uses the local development credentials:
+
+```text
+guest / guest
+```
+
+### Build an individual service
+
+Each service can be built independently:
 
 ```powershell
 .\gradlew.bat -p rental-service build
 ```
 
-Each directory has its own `settings.gradle.kts` and `build.gradle.kts`, so a locally installed Gradle can also build it
-directly:
+Or using a locally installed Gradle:
 
 ```bash
 cd rental-service
 gradle build
 ```
 
-## API examples
+## API
 
-Requests may be sent directly to a service during development or routed through the Gateway using the discovered service
-id.
-
-Create a customer:
+### Create a customer
 
 ```http
 POST /customers
@@ -111,7 +189,7 @@ Content-Type: application/json
 }
 ```
 
-Create a vehicle:
+### Create a vehicle
 
 ```http
 POST /vehicles
@@ -128,21 +206,34 @@ Content-Type: application/json
 }
 ```
 
-Filter available vehicles with `GET /vehicles?category=SUV&status=AVAILABLE`.
+### Find available vehicles
 
-Calculate a rental price:
+```http
+GET /vehicles?category=SUV&status=AVAILABLE
+```
+
+### Calculate rental price
 
 ```bash
 curl "http://localhost:8080/pricing-service/pricing/calculate?vehicleCategory=SUV&startDate=2026-08-20&endDate=2026-08-25"
 ```
 
-Create a rental with `POST /rentals` using `customerId`, `vehicleId`, `startDate`, and `endDate` UUID/date fields. The
-service persists the rental and publishes its event to RabbitMQ.
+### Create a rental
+
+```http
+POST /rentals
+Content-Type: application/json
+```
+
+The request contains the customer ID, vehicle ID, start date, and end date.
+
+The rental is persisted as `PENDING` and a `RentalCreated` event is published to
+RabbitMQ for downstream processing.
 
 ## Configuration
 
 | Variable        | Default                                                  | Description         |
-|-----------------|----------------------------------------------------------|---------------------|
+| --------------- | -------------------------------------------------------- | ------------------- |
 | `DB_URL`        | `jdbc:postgresql://localhost:5432/vehicle_rental_system` | PostgreSQL JDBC URL |
 | `DB_USERNAME`   | `vehicle_rental_system`                                  | PostgreSQL username |
 | `DB_PASSWORD`   | `vehicle_rental_system`                                  | PostgreSQL password |
@@ -151,7 +242,7 @@ service persists the rental and publishes its event to RabbitMQ.
 
 ## Testing
 
-Run a service's complete test suite:
+Run an individual service's test suite:
 
 ```powershell
 .\gradlew.bat -p customer-service test
@@ -161,44 +252,41 @@ Run a service's complete test suite:
 .\gradlew.bat -p pricing-service test
 ```
 
-The database and messaging tests start disposable PostgreSQL and/or RabbitMQ containers automatically. Docker must be
-running. Gateway and Discovery also have independent Spring Boot test dependencies and can be built without the
-infrastructure.
+Tests use Testcontainers to start disposable PostgreSQL and RabbitMQ instances where
+required. Docker must be running.
+
+Gateway and Discovery can be built and tested without the infrastructure.
 
 ## Project structure
 
 ```text
 vehicle-rental-system/
-|-- api-gateway/
-|   |-- src/main/java/dev/asyncluna/rental/gateway/       # API Gateway
-|   `-- src/main/resources/                              # application.yml
-|-- discovery-server/
-|   |-- src/main/java/dev/asyncluna/rental/discovery/    # Eureka registry
-|   `-- src/main/resources/                              # application.yml
-|-- customer-service/
-|   |-- src/main/java/dev/asyncluna/rental/customer/     # Customer API and persistence
-|   |-- src/main/resources/                              # application.yml
-|   `-- src/test/java/dev/asyncluna/rental/customer/     # Testcontainers tests
-|-- vehicle-service/
-|   |-- src/main/java/dev/asyncluna/rental/vehicle/      # Vehicle API and persistence
-|   |-- src/main/resources/                              # application.yml
-|   `-- src/test/java/dev/asyncluna/rental/vehicle/      # Testcontainers tests
-|-- rental-service/
-|   |-- src/main/java/dev/asyncluna/rental/rental/       # Rental API, persistence, events
-|   |-- src/main/resources/                              # application.yml
-|   `-- src/test/java/dev/asyncluna/rental/rental/       # Testcontainers tests
-|-- pricing-service/
-|   |-- src/main/java/dev/asyncluna/rental/pricing/      # Pricing API and rules
-|   |-- src/main/resources/                              # application.yml
-|   `-- src/test/java/dev/asyncluna/rental/pricing/      # Service tests
-|-- notification-service/
-|   |-- src/main/java/dev/asyncluna/rental/notification/ # RabbitMQ consumer
-|   |-- src/main/resources/                              # application.yml
-|   `-- src/test/java/dev/asyncluna/rental/notification/ # Testcontainers tests
-|-- docker-compose.yml                                   # PostgreSQL and RabbitMQ
-|-- gradlew / gradlew.bat
-|-- README.md
-`-- LICENSE
+├── api-gateway/
+│   ├── src/main/java/dev/asyncluna/rental/gateway/
+│   └── src/main/resources/
+├── discovery-server/
+│   ├── src/main/java/dev/asyncluna/rental/discovery/
+│   └── src/main/resources/
+├── customer-service/
+│   ├── src/main/java/dev/asyncluna/rental/customer/
+│   └── src/test/java/dev/asyncluna/rental/customer/
+├── vehicle-service/
+│   ├── src/main/java/dev/asyncluna/rental/vehicle/
+│   └── src/test/java/dev/asyncluna/rental/vehicle/
+├── rental-service/
+│   ├── src/main/java/dev/asyncluna/rental/rental/
+│   └── src/test/java/dev/asyncluna/rental/rental/
+├── pricing-service/
+│   ├── src/main/java/dev/asyncluna/rental/pricing/
+│   └── src/test/java/dev/asyncluna/rental/pricing/
+├── notification-service/
+│   ├── src/main/java/dev/asyncluna/rental/notification/
+│   └── src/test/java/dev/asyncluna/rental/notification/
+├── docker-compose.yml
+├── gradlew
+├── gradlew.bat
+├── README.md
+└── LICENSE
 ```
 
 ## License
