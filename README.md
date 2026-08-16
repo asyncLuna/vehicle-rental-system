@@ -262,29 +262,33 @@ Gateway and Discovery can be built and tested without the infrastructure.
 ```text
 vehicle-rental-system/
 ├── api-gateway/
-│   ├── src/main/java/dev/asyncluna/rental/gateway/
-│   └── src/main/resources/
+│   ├── src/main/java/dev/asyncluna/rental/gateway/       # API Gateway
+│   └── src/main/resources/                              # application.yaml
 ├── discovery-server/
-│   ├── src/main/java/dev/asyncluna/rental/discovery/
-│   └── src/main/resources/
+│   ├── src/main/java/dev/asyncluna/rental/discovery/    # Eureka registry
+│   └── src/main/resources/                              # application.yaml
 ├── customer-service/
-│   ├── src/main/java/dev/asyncluna/rental/customer/
-│   └── src/test/java/dev/asyncluna/rental/customer/
+│   ├── src/main/java/dev/asyncluna/rental/customer/     # Customer API and persistence
+│   ├── src/main/resources/                              # application.yaml
+│   └── src/test/java/dev/asyncluna/rental/customer/     # Testcontainers tests
 ├── vehicle-service/
-│   ├── src/main/java/dev/asyncluna/rental/vehicle/
-│   └── src/test/java/dev/asyncluna/rental/vehicle/
+│   ├── src/main/java/dev/asyncluna/rental/vehicle/      # Vehicle API and persistence
+│   ├── src/main/resources/                              # application.yaml
+│   └── src/test/java/dev/asyncluna/rental/vehicle/      # Testcontainers tests
 ├── rental-service/
-│   ├── src/main/java/dev/asyncluna/rental/rental/
-│   └── src/test/java/dev/asyncluna/rental/rental/
+│   ├── src/main/java/dev/asyncluna/rental/rental/       # Rental API, persistence and events
+│   ├── src/main/resources/                              # application.yaml
+│   └── src/test/java/dev/asyncluna/rental/rental/       # Testcontainers tests
 ├── pricing-service/
-│   ├── src/main/java/dev/asyncluna/rental/pricing/
-│   └── src/test/java/dev/asyncluna/rental/pricing/
+│   ├── src/main/java/dev/asyncluna/rental/pricing/      # Pricing API and rules
+│   ├── src/main/resources/                              # application.yaml
+│   └── src/test/java/dev/asyncluna/rental/pricing/      # Service tests
 ├── notification-service/
-│   ├── src/main/java/dev/asyncluna/rental/notification/
-│   └── src/test/java/dev/asyncluna/rental/notification/
-├── docker-compose.yml
-├── gradlew
-├── gradlew.bat
+│   ├── src/main/java/dev/asyncluna/rental/notification/ # RabbitMQ consumer
+│   ├── src/main/resources/                              # application.yaml
+│   └── src/test/java/dev/asyncluna/rental/notification/ # Testcontainers tests
+├── docker-compose.yml                                    # PostgreSQL and RabbitMQ
+├── gradlew / gradlew.bat                                # Shared Gradle wrapper
 ├── README.md
 └── LICENSE
 ```
