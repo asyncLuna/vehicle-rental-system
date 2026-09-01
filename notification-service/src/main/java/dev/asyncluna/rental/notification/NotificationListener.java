@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class NotificationListener {
     @RabbitListener(queues = "vehicle-rental-system.notifications")
-    public void receive(String event) {
-        System.out.println("Notification dispatched: " + event);
+    public void receive(String rentalEvent) {
+        System.out.println("Notification dispatched: " + rentalEvent);
     }
 }

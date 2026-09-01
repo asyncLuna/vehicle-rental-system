@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class RentalServiceApplication {
-    public static void main(String[] a) {
-        SpringApplication.run(RentalServiceApplication.class, a);
+    public static void main(String[] applicationArguments) {
+        SpringApplication.run(RentalServiceApplication.class, applicationArguments);
     }
 }

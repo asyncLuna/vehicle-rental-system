@@ -15,10 +15,10 @@ class CustomerServiceIntegrationTest {
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
 
     @DynamicPropertySource
-    static void db(DynamicPropertyRegistry r) {
-        r.add("spring.datasource.url", postgres::getJdbcUrl);
-        r.add("spring.datasource.username", postgres::getUsername);
-        r.add("spring.datasource.password", postgres::getPassword);
+    static void registerDatabaseProperties(DynamicPropertyRegistry propertyRegistry) {
+        propertyRegistry.add("spring.datasource.url", postgres::getJdbcUrl);
+        propertyRegistry.add("spring.datasource.username", postgres::getUsername);
+        propertyRegistry.add("spring.datasource.password", postgres::getPassword);
     }
 
     @Test

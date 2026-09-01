@@ -11,12 +11,12 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/rentals")
 public class RentalController {
-    private final RentalRepository repo;
-    private final RabbitTemplate rabbit;
+    private final RentalRepository rentalRepository;
+    private final RabbitTemplate rabbitTemplate;
 
-    public RentalController(RentalRepository r, RabbitTemplate q) {
-        repo = r;
-        rabbit = q;
+    public RentalController(RentalRepository rentalRepository, RabbitTemplate rabbitTemplate) {
+        this.rentalRepository = rentalRepository;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @PostMapping
@@ -24,13 +24,13 @@ public class RentalController {
     Rental create(@Valid @RequestBody Rental request) {
         request.status = Rental.Status.PENDING;
         request.totalPrice = BigDecimal.ZERO;
-        Rental saved = repo.save(request);
-        rabbit.convertAndSend("vehicle-rental-system.notifications", saved.id.toString());
-        return saved;
+        Rental savedRental = rentalRepository.save(request);
+        rabbitTemplate.convertAndSend("vehicle-rental-system.notifications", savedRental.id.toString());
+        return savedRental;
     }
 
     @GetMapping("/{id}")
     Rental get(@PathVariable UUID id) {
-        return repo.findById(id).orElseThrow();
+        return rentalRepository.findById(id).orElseThrow();
     }
 }

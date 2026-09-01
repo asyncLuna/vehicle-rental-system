@@ -7,31 +7,31 @@ import java.util.*;
 @RestController
 @RequestMapping("/vehicles")
 public class VehicleController {
-    private final VehicleRepository repo;
+    private final VehicleRepository vehicleRepository;
 
-    public VehicleController(VehicleRepository r) {
-        repo = r;
+    public VehicleController(VehicleRepository vehicleRepository) {
+        this.vehicleRepository = vehicleRepository;
     }
 
     @PostMapping
-    Vehicle create(@RequestBody Vehicle v) {
-        return repo.save(v);
+    Vehicle create(@RequestBody Vehicle vehicle) {
+        return vehicleRepository.save(vehicle);
     }
 
     @GetMapping
     List<Vehicle> all(@RequestParam(required = false) Vehicle.Category category, @RequestParam(required = false) Vehicle.Status status) {
-        return repo.findAll().stream().filter(v -> category == null || v.category == category).filter(v -> status == null || v.status == status).toList();
+        return vehicleRepository.findAll().stream().filter(vehicle -> category == null || vehicle.category == category).filter(vehicle -> status == null || vehicle.status == status).toList();
     }
 
     @GetMapping("/{id}")
     Vehicle get(@PathVariable UUID id) {
-        return repo.findById(id).orElseThrow();
+        return vehicleRepository.findById(id).orElseThrow();
     }
 
     @PatchMapping("/{id}/status")
-    Vehicle status(@PathVariable UUID id, @RequestParam Vehicle.Status value) {
-        Vehicle v = get(id);
-        v.status = value;
-        return repo.save(v);
+    Vehicle status(@PathVariable UUID id, @RequestParam Vehicle.Status requestedStatus) {
+        Vehicle vehicle = get(id);
+        vehicle.status = requestedStatus;
+        return vehicleRepository.save(vehicle);
     }
 }

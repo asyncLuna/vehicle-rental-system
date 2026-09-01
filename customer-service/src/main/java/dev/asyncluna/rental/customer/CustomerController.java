@@ -9,20 +9,20 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/customers")
 public class CustomerController {
-    private final CustomerRepository repo;
+    private final CustomerRepository customerRepository;
 
-    public CustomerController(CustomerRepository r) {
-        repo = r;
+    public CustomerController(CustomerRepository customerRepository) {
+        this.customerRepository = customerRepository;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    Customer create(@Valid @RequestBody Customer c) {
-        return repo.save(c);
+    Customer create(@Valid @RequestBody Customer customer) {
+        return customerRepository.save(customer);
     }
 
     @GetMapping("/{id}")
     Customer get(@PathVariable UUID id) {
-        return repo.findById(id).orElseThrow();
+        return customerRepository.findById(id).orElseThrow();
     }
 }

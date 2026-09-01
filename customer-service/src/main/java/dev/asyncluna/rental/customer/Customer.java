@@ -24,10 +24,10 @@ public class Customer {
     protected Customer() {
     }
 
-    public Customer(String f, String l, String e, String p) {
-        firstName = f;
-        lastName = l;
-        email = e;
-        phone = p;
+    public Customer(String firstName, String lastName, String email, String phone) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.phone = phone;
     }
 }

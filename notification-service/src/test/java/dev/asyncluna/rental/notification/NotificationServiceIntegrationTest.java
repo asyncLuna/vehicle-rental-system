@@ -11,12 +11,12 @@ import org.testcontainers.junit.jupiter.*;
 @Testcontainers
 class NotificationServiceIntegrationTest {
     @Container
-    static RabbitMQContainer mq = new RabbitMQContainer("rabbitmq:3-management");
+    static RabbitMQContainer rabbitMqContainer = new RabbitMQContainer("rabbitmq:3-management");
 
     @DynamicPropertySource
-    static void props(DynamicPropertyRegistry r) {
-        r.add("spring.rabbitmq.host", mq::getHost);
-        r.add("spring.rabbitmq.port", mq::getAmqpPort);
+    static void registerRabbitMqProperties(DynamicPropertyRegistry propertyRegistry) {
+        propertyRegistry.add("spring.rabbitmq.host", rabbitMqContainer::getHost);
+        propertyRegistry.add("spring.rabbitmq.port", rabbitMqContainer::getAmqpPort);
     }
 
     @Test

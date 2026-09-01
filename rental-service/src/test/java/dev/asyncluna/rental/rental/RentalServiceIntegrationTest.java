@@ -13,17 +13,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 class RentalServiceIntegrationTest {
     @Container
-    static PostgreSQLContainer<?> db = new PostgreSQLContainer<>("postgres:16");
+    static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:16");
     @Container
-    static RabbitMQContainer mq = new RabbitMQContainer("rabbitmq:3-management");
+    static RabbitMQContainer rabbitMqContainer = new RabbitMQContainer("rabbitmq:3-management");
 
     @DynamicPropertySource
-    static void props(DynamicPropertyRegistry r) {
-        r.add("spring.datasource.url", db::getJdbcUrl);
-        r.add("spring.datasource.username", db::getUsername);
-        r.add("spring.datasource.password", db::getPassword);
-        r.add("spring.rabbitmq.host", mq::getHost);
-        r.add("spring.rabbitmq.port", mq::getAmqpPort);
+    static void registerServiceProperties(DynamicPropertyRegistry propertyRegistry) {
+        propertyRegistry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
+        propertyRegistry.add("spring.datasource.username", postgresContainer::getUsername);
+        propertyRegistry.add("spring.datasource.password", postgresContainer::getPassword);
+        propertyRegistry.add("spring.rabbitmq.host", rabbitMqContainer::getHost);
+        propertyRegistry.add("spring.rabbitmq.port", rabbitMqContainer::getAmqpPort);
     }
 
     @Test
