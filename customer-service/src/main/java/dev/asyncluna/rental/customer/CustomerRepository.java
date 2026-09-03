@@ -1,8 +1,6 @@
 package dev.asyncluna.rental.customer;
 
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.UUID;
-
-public interface CustomerRepository extends JpaRepository<Customer, UUID> {
-}
+public interface CustomerRepository extends JpaRepository<Customer, UUID> {}

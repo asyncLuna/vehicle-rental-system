@@ -1,8 +1,6 @@
 package dev.asyncluna.rental.vehicle;
 
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.UUID;
-
-public interface VehicleRepository extends JpaRepository<Vehicle, UUID> {
-}
+public interface VehicleRepository extends JpaRepository<Vehicle, UUID> {}

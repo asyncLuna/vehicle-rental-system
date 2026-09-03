@@ -5,3 +5,7 @@ spring.datasource.password: ${DB_PASSWORD:vehicle-rental-system}
 spring.jpa.hibernate.ddl-auto: update
 spring.rabbitmq.host: ${RABBITMQ_HOST:localhost}
 eureka.client.service-url.defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+management.endpoints.web.exposure.include: health,info,metrics,circuitbreakers
+resilience4j.circuitbreaker.instances.vehicleService.sliding-window-size: 10
+resilience4j.circuitbreaker.instances.vehicleService.failure-rate-threshold: 50
+resilience4j.circuitbreaker.instances.vehicleService.wait-duration-in-open-state: 10s

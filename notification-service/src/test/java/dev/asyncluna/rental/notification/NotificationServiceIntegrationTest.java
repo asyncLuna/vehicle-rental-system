@@ -20,6 +20,5 @@ class NotificationServiceIntegrationTest {
     }
 
     @Test
-    void contextLoads() {
-    }
+    void contextLoads() {}
 }

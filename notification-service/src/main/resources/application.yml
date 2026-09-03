@@ -1,3 +1,7 @@
 spring.application.name: notification-service
 spring.rabbitmq.host: ${RABBITMQ_HOST:localhost}
 eureka.client.service-url.defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+management.endpoints.web.exposure.include: health,info,metrics,circuitbreakers
+resilience4j.circuitbreaker.instances.notificationService.sliding-window-size: 10
+resilience4j.circuitbreaker.instances.notificationService.failure-rate-threshold: 50
+resilience4j.circuitbreaker.instances.notificationService.wait-duration-in-open-state: 10s

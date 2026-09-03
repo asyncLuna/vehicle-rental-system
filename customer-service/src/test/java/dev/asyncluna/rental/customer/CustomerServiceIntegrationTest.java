@@ -22,6 +22,5 @@ class CustomerServiceIntegrationTest {
     }
 
     @Test
-    void contextLoads() {
-    }
+    void contextLoads() {}
 }

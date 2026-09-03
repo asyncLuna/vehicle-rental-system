@@ -1,12 +1,13 @@
 package dev.asyncluna.rental.rental;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
+import java.util.UUID;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
-import java.util.UUID;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/rentals")
@@ -20,8 +21,9 @@ public class RentalController {
     }
 
     @PostMapping
+    @CircuitBreaker(name = "rentalService", fallbackMethod = "serviceUnavailable")
     @ResponseStatus(HttpStatus.CREATED)
-    Rental create(@Valid @RequestBody Rental request) {
+    public Rental create(@Valid @RequestBody Rental request) {
         request.status = Rental.Status.PENDING;
         request.totalPrice = BigDecimal.ZERO;
         Rental savedRental = rentalRepository.save(request);
@@ -30,7 +32,22 @@ public class RentalController {
     }
 
     @GetMapping("/{id}")
-    Rental get(@PathVariable UUID id) {
+    @CircuitBreaker(name = "rentalService", fallbackMethod = "serviceUnavailable")
+    public Rental get(@PathVariable UUID id) {
         return rentalRepository.findById(id).orElseThrow();
+    }
+
+    private Rental serviceUnavailable(Rental ignored, Throwable cause) {
+        throw new ResponseStatusException(
+                org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                "Rental service temporarily unavailable",
+                cause);
+    }
+
+    private Rental serviceUnavailable(UUID ignored, Throwable cause) {
+        throw new ResponseStatusException(
+                org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                "Rental service temporarily unavailable",
+                cause);
     }
 }

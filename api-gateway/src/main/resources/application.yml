@@ -1,6 +1,40 @@
 server.port: 8080
 spring:
-  application.name: api-gateway
-  cloud.gateway.discovery.locator.enabled: true
-  cloud.gateway.discovery.locator.lower-case-service-id: true
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: customer-service
+          uri: lb://customer-service
+          predicates:
+            - Path=/customers/**
+        - id: vehicle-service
+          uri: lb://vehicle-service
+          predicates:
+            - Path=/vehicles/**
+        - id: rental-service
+          uri: lb://rental-service
+          predicates:
+            - Path=/rentals/**
+        - id: pricing-service
+          uri: lb://pricing-service
+          predicates:
+            - Path=/pricing/**
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/notifications/**
 eureka.client.service-url.defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+spring.cloud.gateway.default-filters:
+  - name: CircuitBreaker
+    args:
+      name: gatewayBackend
+resilience4j.circuitbreaker.instances.gatewayBackend.sliding-window-size: 10
+resilience4j.circuitbreaker.instances.gatewayBackend.failure-rate-threshold: 50
+resilience4j.circuitbreaker.instances.gatewayBackend.wait-duration-in-open-state: 10s
+management.endpoints.web.exposure.include: health,info,metrics,circuitbreakers

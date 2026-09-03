@@ -7,12 +7,11 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-persistence-4169E1?logo=postgresql&logoColor=white)
 ![Gradle](https://img.shields.io/badge/Gradle-Kotlin%20DSL-02303A?logo=gradle&logoColor=white)
 
-A compact Spring Cloud microservices platform for managing vehicles, customers, rentals,
-pricing, and asynchronous notifications.
+A compact Spring Cloud microservices platform for managing vehicles, customers, rentals, pricing, and asynchronous
+notifications.
 
-The project is intentionally implemented as independently deployable services, with
-Eureka for service discovery, Spring Cloud Gateway as the public entry point, and
-RabbitMQ for asynchronous communication between services.
+The project is intentionally implemented as independently deployable services, with Eureka for service discovery, Spring
+Cloud Gateway as the public entry point, and RabbitMQ for asynchronous communication between services.
 
 ## Architecture
 
@@ -36,20 +35,18 @@ flowchart LR
     Customer --> CustomerDB[(PostgreSQL)]
     Vehicle --> VehicleDB[(PostgreSQL)]
     Rental --> RentalDB[(PostgreSQL)]
-    Notify --> NotificationDB[(PostgreSQL)]
-````
+```
 
-The API Gateway is the single public entry point. Eureka maintains the service registry
-and allows services to be discovered without hardcoded host addresses.
+The API Gateway is the single public entry point. Eureka maintains the service registry and allows services to be
+discovered without hardcoded host addresses.
 
-REST is used for synchronous request/response operations, while RabbitMQ handles
-asynchronous rental events. Each data-owning service manages its own persistence model
-and does not access another service's database directly.
+REST is used for synchronous request/response operations, while RabbitMQ handles asynchronous rental events. Each
+data-owning service manages its own persistence model and does not access another service's database directly.
 
 ## Services
 
 | Service                | Responsibility                             |
-| ---------------------- | ------------------------------------------ |
+|------------------------|--------------------------------------------|
 | `api-gateway`          | Public API entry point and request routing |
 | `discovery-server`     | Eureka service registry                    |
 | `customer-service`     | Customer management                        |
@@ -68,36 +65,41 @@ and does not access another service's database directly.
 6. Notification Service independently consumes the event and records a notification.
 7. The vehicle becomes available again when the rental is completed.
 
-The services remain independently deployable and communicate through REST or RabbitMQ
-rather than sharing application code or database tables.
+The services remain independently deployable and communicate through REST or RabbitMQ rather than sharing application
+code or database tables.
 
 ## Design decisions
 
 ### Spring Cloud Gateway
 
-The Gateway provides a single entry point for external clients and routes requests
-to services discovered through Eureka.
+The Gateway provides a single entry point for external clients and routes requests to services discovered through
+Eureka.
 
 ### Eureka
 
-Eureka acts as the service registry. Services register themselves on startup and
-the Gateway uses service discovery instead of hardcoded service addresses.
+Eureka acts as the service registry. Services register themselves on startup and the Gateway uses service discovery
+instead of hardcoded service addresses.
 
 ### RabbitMQ
 
-RabbitMQ is used for events where the producer should not need to wait for downstream
-consumers. `RentalCreated` is consumed independently by Vehicle and Notification
-services.
+RabbitMQ is used for events where the producer should not need to wait for downstream consumers. `RentalCreated` is
+consumed independently by Vehicle and Notification services. Notification Service records the event in its local
+processing flow and does not require a database.
+
+### Resilience4j
+
+Resilience4j provides circuit breakers for service calls and gateway routing. The API Gateway applies a circuit breaker
+to its default downstream filter, while each service has its own circuit-breaker configuration with a ten-request
+sliding window, a 50% failure threshold, and a ten-second open-state wait duration.
 
 ### Service-owned persistence
 
-Each service owns its persistence model. Services never query another service's
-tables directly.
+Each service owns its persistence model. Services never query another service's tables directly.
 
-### Independent Gradle builds
+### Gradle builds
 
-Every deployable service is a standalone Gradle project with its own
-`build.gradle.kts` and `settings.gradle.kts`.
+The repository root includes all deployable services as a Gradle multi-project build. Each service also retains its own
+`settings.gradle.kts`, so it can be built independently when working inside that service directory.
 
 ## Features
 
@@ -109,6 +111,7 @@ Every deployable service is a standalone Gradle project with its own
 * RabbitMQ event publishing and consumption
 * Eureka service discovery
 * Spring Cloud API Gateway
+* Resilience4j circuit breakers
 * PostgreSQL persistence
 * Docker Compose local environment
 * Testcontainers integration tests
@@ -116,7 +119,7 @@ Every deployable service is a standalone Gradle project with its own
 ## Technology stack
 
 | Area           | Technology                              |
-| -------------- | --------------------------------------- |
+|----------------|-----------------------------------------|
 | Language       | Java 21                                 |
 | Framework      | Spring Boot 3.5                         |
 | Cloud          | Spring Cloud Gateway, Netflix Eureka    |
@@ -124,15 +127,17 @@ Every deployable service is a standalone Gradle project with its own
 | Persistence    | Spring Data JPA, Hibernate              |
 | Database       | PostgreSQL                              |
 | Messaging      | RabbitMQ, Spring AMQP                   |
+| Resilience     | Resilience4j circuit breakers           |
 | Testing        | JUnit, Spring Boot Test, Testcontainers |
-| Build          | Gradle Kotlin DSL                       |
+| Build          | Gradle 9.7.1, Kotlin DSL                |
+| Formatting     | Spotless, Palantir Java Format, ktfmt   |
 | Infrastructure | Docker Compose                          |
 
 ## Prerequisites
 
 * JDK 21
 * Docker Engine with Docker Compose
-* Gradle 8.14+ or the included Gradle wrapper
+* Gradle 9.7.1 or the included Gradle wrapper
 
 ## Quick start
 
@@ -145,7 +150,7 @@ docker compose up --build
 The main endpoints are:
 
 | Service             | URL                      |
-| ------------------- | ------------------------ |
+|---------------------|--------------------------|
 | API Gateway         | `http://localhost:8080`  |
 | Eureka              | `http://localhost:8761`  |
 | RabbitMQ Management | `http://localhost:15672` |
@@ -158,17 +163,37 @@ guest / guest
 
 ### Build an individual service
 
-Each service can be built independently:
+Build one service from the repository root:
 
 ```powershell
 .\gradlew.bat -p rental-service build
 ```
 
-Or using a locally installed Gradle:
+Or enter the service directory and use its standalone build:
 
 ```bash
 cd rental-service
-gradle build
+..\gradlew.bat build
+```
+
+Build all services from the repository root:
+
+```powershell
+.\gradlew.bat build
+```
+
+### Code formatting
+
+Spotless formats Java sources with Palantir Java Format and formats Gradle Kotlin DSL files with `ktfmt`:
+
+```powershell
+.\gradlew.bat spotlessApply
+```
+
+Check formatting without changing files:
+
+```powershell
+.\gradlew.bat spotlessCheck
 ```
 
 ## API
@@ -227,13 +252,12 @@ Content-Type: application/json
 
 The request contains the customer ID, vehicle ID, start date, and end date.
 
-The rental is persisted as `PENDING` and a `RentalCreated` event is published to
-RabbitMQ for downstream processing.
+The rental is persisted as `PENDING` and a `RentalCreated` event is published to RabbitMQ for downstream processing.
 
 ## Configuration
 
 | Variable        | Default                                                  | Description         |
-| --------------- | -------------------------------------------------------- | ------------------- |
+|-----------------|----------------------------------------------------------|---------------------|
 | `DB_URL`        | `jdbc:postgresql://localhost:5432/vehicle_rental_system` | PostgreSQL JDBC URL |
 | `DB_USERNAME`   | `vehicle_rental_system`                                  | PostgreSQL username |
 | `DB_PASSWORD`   | `vehicle_rental_system`                                  | PostgreSQL password |
@@ -252,10 +276,12 @@ Run an individual service's test suite:
 .\gradlew.bat -p pricing-service test
 ```
 
-Tests use Testcontainers to start disposable PostgreSQL and RabbitMQ instances where
-required. Docker must be running.
+Tests use Testcontainers to start disposable PostgreSQL and RabbitMQ instances where required. Docker must be running.
 
 Gateway and Discovery can be built and tested without the infrastructure.
+
+The services expose Spring Boot Actuator endpoints, including health, info, metrics, and circuit-breaker information,
+according to each service's configuration.
 
 ## Project structure
 

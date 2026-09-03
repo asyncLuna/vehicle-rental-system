@@ -14,6 +14,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class VehicleServiceIntegrationTest {
     @Container
     static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:16");
+
     @Container
     static RabbitMQContainer rabbitMqContainer = new RabbitMQContainer("rabbitmq:3-management");
 
@@ -27,6 +28,5 @@ class VehicleServiceIntegrationTest {
     }
 
     @Test
-    void contextLoads() {
-    }
+    void contextLoads() {}
 }
